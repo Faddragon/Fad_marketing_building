@@ -7,7 +7,7 @@ Um conjunto de agentes Hermes, cada um num **andar** (contêiner Docker isolado)
 | Andar | Função | Internet | Fala com o médico? |
 |---|---|---|---|
 | `skip` | Concierge: pesquisa, revisa LGPD e CFM, registra decisões | Sim | Sim (Telegram) |
-| `marketing` | Cria carrossel, roteiros, ganchos, LinkedIn e arte | **Não**; só o modelo de IA, pelo porteiro | Não |
+| `marketing` | Cria carrossel, roteiros, ganchos, LinkedIn e arte | **Não**; só o modelo de IA e o Telegram do dono, pelo porteiro | Só com o dono (administração); o atendimento ao médico é do skip |
 | `porteiro` | Proxy de saída com lista branca | Só o que está em `filtro.txt` | Não |
 
 ```
@@ -59,9 +59,16 @@ O `auditar` dá **alerta** se: um contêiner for privilegiado; houver porta publ
 3. O que o agente aprende vai para o livro de lições (`correio/licoes.md`), nunca para dentro das skills.
 4. Dados e segredos ficam em `/opt/predio-dados`. O `.gitignore` é uma segunda trava.
 5. LGPD e CFM moram só no skip (`revisar-conformidade`). Os outros andares não guardam cópia dessas regras.
-6. Só o skip tem internet livre; o marketing alcança apenas o modelo de IA, pelo porteiro.
+6. Só o skip tem internet livre; o marketing alcança apenas o modelo de IA e o Telegram do dono, pelo porteiro.
 7. Nome de skill sem acento e único dentro do andar. Uma skill cita outra pelo nome, nunca pelo caminho.
 8. Andar novo: copie `andares/_modelo`, troque `NOME-DO-ANDAR`, preencha o README e inclua o nome na lista `ANDARES` do `predio`.
+
+## Novas skills pelo Telegram
+O dono pode pedir skills novas ao skip e ao marketing pelo Telegram. Funciona assim:
+- As skills do repositório ficam numa pasta própria, **só leitura**. O resto da memória do Hermes tem escrita, então as skills novas nascem lá, em `/opt/predio-dados/<andar>/skills/...`, e valem na hora.
+- Elas entram no backup de `/opt/predio-dados`, mas **não** estão no GitHub. Para tornar uma skill permanente e versionada, copie a pasta dela para `andares/<andar>/skills/<andar>/` no repositório (pelo GitHub) e depois `./predio atualizar && ./predio reconstruir <andar>`.
+- O agente não edita as skills do repositório. Se uma precisar mudar, o dono muda no GitHub.
+- Opcional: `skills.write_approval: true` no `config.yaml` do Hermes faz o agente pedir revisão antes de gravar uma skill nova.
 
 ## Estado atual
 Montagem **ainda não testada na VPS**. Pontos a conferir na primeira subida estão em `docs/MIGRACAO.md`.

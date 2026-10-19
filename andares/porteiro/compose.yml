@@ -1,0 +1,22 @@
+# PORTEIRO DE SAÍDA - proxy (tinyproxy) com lista branca.
+# É a única porta de saída do marketing. Só deixa passar o que está em filtro.txt.
+# Subir:  ./predio subir porteiro
+services:
+  porteiro:
+    build: .
+    container_name: predio-porteiro
+    restart: unless-stopped
+    labels:
+      predio.andar: "porteiro"
+      predio.tipo: "proxy"
+      predio.funcao: "porteiro de saída: libera só os endereços de filtro.txt"
+      predio.internet: "restrita (lista branca)"
+    volumes:
+      - ./tinyproxy.conf:/etc/tinyproxy/tinyproxy.conf:ro
+      - ./filtro.txt:/etc/tinyproxy/filtro.txt:ro
+    networks: [predio_interna, predio_externa]
+networks:
+  predio_interna:
+    external: true
+  predio_externa:
+    external: true
