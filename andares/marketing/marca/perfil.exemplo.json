@@ -1,0 +1,95 @@
+{
+  "versao": 1,
+  "atualizado_em": "2026-10-19",
+  "marca_id": "dr-fulano",
+  "entidade": {
+    "nome": "Dr(a). Nome Sobrenome",
+    "tipo": "profissional"
+  },
+  "tipo_perfil": "medico",
+  "nome_publico": "Dr(a). Nome Sobrenome",
+  "conselho": {
+    "sigla": "CRM",
+    "numero": "00000",
+    "uf": "SP"
+  },
+  "especialidades": [
+    {
+      "nome": "Especialidade exemplo",
+      "rqe": "00000"
+    }
+  ],
+  "areas_de_atuacao": [
+    "área de foco 1",
+    "área de foco 2"
+  ],
+  "formacao_titulos": [
+    "Graduação em Medicina, instituição, ano"
+  ],
+  "atuacao": {
+    "locais": [
+      "Consultório X",
+      "Clínica Y"
+    ],
+    "cidade_regiao": "São Paulo, SP",
+    "modalidade": "ambos",
+    "convenios": "particular",
+    "idiomas": [
+      "pt-BR"
+    ]
+  },
+  "publico": {
+    "atrair": "descrição geral do perfil de paciente",
+    "nao_atrair": "descrição geral de quem não é o público"
+  },
+  "temas": {
+    "pode_divulgar": [
+      "tema 1",
+      "tema 2"
+    ],
+    "evitar": [
+      "tema que não quer abordar"
+    ]
+  },
+  "diferenciais": [
+    "diferencial sem promessa de resultado"
+  ],
+  "redes": [
+    {
+      "rede": "instagram",
+      "usuario": "@exemplo",
+      "tipo_conta": "profissional",
+      "conectada_postiz": false,
+      "prioridade": 1
+    },
+    {
+      "rede": "linkedin",
+      "usuario": "",
+      "tipo_conta": "pessoal",
+      "conectada_postiz": false,
+      "prioridade": 2
+    },
+    {
+      "rede": "youtube",
+      "usuario": "",
+      "tipo_conta": "canal",
+      "conectada_postiz": false,
+      "prioridade": 3
+    }
+  ],
+  "referencias_admiradas": [
+    "@perfil1"
+  ],
+  "referencias_evitar": [
+    "@perfil2"
+  ],
+  "tempo_semanal_aprovacao_min": 60,
+  "marca": {
+    "tem_manual": false,
+    "paleta": [],
+    "fontes": [],
+    "tem_logo": false,
+    "tem_fotos_profissionais": false
+  },
+  "rodape_obrigatorio": "Dr(a). Nome Sobrenome | CRM-SP 00000 | RQE 00000"
+}
