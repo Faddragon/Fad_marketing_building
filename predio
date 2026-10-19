@@ -6,6 +6,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PREDIO_DADOS="${PREDIO_DADOS:-/opt/predio-dados}"   # tudo que muda e é privado
 ANDARES=(porteiro skip marketing)                          # ordem de subida: o porteiro primeiro
+UID_HERMES=10000                                           # dono da pasta de dados dentro da imagem do Hermes
 REDE_INTERNA=predio_interna                                # sem saída para a internet
 REDE_EXTERNA=predio_externa                                # com saída para a internet
 PASTAS_CORREIO=(trabalhos pedidos pesquisas rascunhos prontos decisoes aprovados enviados rejeitados metricas avisos)
@@ -30,6 +31,7 @@ compose() {  # compose <andar> <argumentos do docker compose>
 }
 
 cmd_instalar() {
+  [[ "$EUID" -eq 0 ]] || erro "rode como root (por causa do dono das pastas de dados)"
   command -v docker >/dev/null || erro "docker não encontrado"
   docker compose version >/dev/null 2>&1 || erro "docker compose não encontrado"
   git -C "$RAIZ" config core.fileMode false 2>/dev/null || true
@@ -45,7 +47,10 @@ cmd_instalar() {
   mkdir -p "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos"
   local p
   for p in "${PASTAS_CORREIO[@]}"; do mkdir -p "$PREDIO_DADOS/correio/$p"; done
-  chmod 700 "$PREDIO_DADOS/segredos"
+  chmod 700 "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
+  # Os Hermes rodam como o usuário $UID_HERMES dentro do contêiner: ele precisa ser dono do que escreve.
+  chown "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
+  chown -R "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/correio" "$PREDIO_DADOS/marca"
   echo "pastas de dados prontas em $PREDIO_DADOS"
   echo "próximo passo: docs/MIGRACAO.md (trazer a memória dos Hermes atuais)"
 }

@@ -1,0 +1,22 @@
+# Andar NOME-DO-ANDAR - copie para andares/<nome>/compose.yml e troque NOME-DO-ANDAR.
+# Depois acrescente o nome do andar na lista ANDARES do script ./predio.
+services:
+  NOME-DO-ANDAR:
+    image: nousresearch/hermes-agent:stable
+    container_name: predio-NOME-DO-ANDAR
+    command: ["gateway", "run"]
+    restart: unless-stopped
+    labels:
+      predio.andar: "NOME-DO-ANDAR"
+      predio.tipo: "hermes"
+      predio.funcao: "(uma frase)"
+      predio.internet: "nao"      # ou "sim"
+    volumes:
+      - ${PREDIO_DADOS:-/opt/predio-dados}/NOME-DO-ANDAR:/opt/data
+      - ./skills/NOME-DO-ANDAR:/opt/data/skills/NOME-DO-ANDAR:ro
+      - ./SOUL.md:/opt/data/SOUL.md:ro
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio:/opt/correio
+    networks: [predio_interna]    # ou predio_externa, se o andar precisar de internet
+networks:
+  predio_interna:
+    external: true
