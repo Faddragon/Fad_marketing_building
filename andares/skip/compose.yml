@@ -1,0 +1,29 @@
+# Andar SKIP (concierge) - Hermes com internet.
+# Fala com o médico no Telegram, pesquisa, revisa LGPD e CFM, registra decisões.
+# Subir:  ./predio subir skip      Ver:  ./predio status | ./predio auditar
+services:
+  skip:
+    image: nousresearch/hermes-agent:stable
+    container_name: predio-skip
+    command: ["gateway", "run"]
+    restart: unless-stopped
+    labels:
+      predio.andar: "skip"
+      predio.tipo: "hermes"
+      predio.funcao: "concierge: conversa com o médico, pesquisa, revisa LGPD e CFM"
+      predio.internet: "sim"
+    volumes:
+      # Memória do Hermes (escrita). Fica FORA do repositório: tem chaves e conversas.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/skip:/opt/data
+      # Skills e SOUL vêm do repositório e são SÓ LEITURA para o agente.
+      # Para mudar, edite no GitHub e rode: ./predio atualizar && ./predio reconstruir skip
+      - ./skills/skip:/opt/data/skills/skip:ro
+      - ./SOUL.md:/opt/data/SOUL.md:ro
+      # Pasta de troca com os outros andares (única onde o skip escreve fora da memória).
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio:/opt/correio
+    networks: [predio_externa]
+    # Endurecimento a testar depois (pode quebrar a imagem; teste com ./predio conversar skip):
+    # security_opt: ["no-new-privileges:true"]
+networks:
+  predio_externa:
+    external: true

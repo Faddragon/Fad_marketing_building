@@ -1,0 +1,11 @@
+{
+  "marcas": [
+    {
+      "id": "dr-fulano",
+      "nome": "Dr(a). Nome Sobrenome",
+      "tipo": "profissional",
+      "criada_em": "2026-10-19"
+    }
+  ],
+  "padrao": "dr-fulano"
+}
