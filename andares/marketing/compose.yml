@@ -1,5 +1,6 @@
 # Andar MARKETING (estúdio de criação) - Hermes SEM internet.
 # Só alcança o modelo de IA e o Telegram do dono, e só pelo porteiro (lista branca em andares/porteiro/filtro.txt).
+# A API do próprio Hermes fica ligada SÓ na rede interna (nenhuma porta publicada): é por ela que o carteiro o acorda.
 # Subir:  ./predio subir marketing     Ver:  ./predio status | ./predio auditar
 services:
   marketing:
@@ -23,13 +24,18 @@ services:
       predio.tipo: "hermes"
       predio.funcao: "estúdio de criação: carrossel, roteiros, ganchos, LinkedIn, arte"
       predio.internet: "nao (só o modelo de IA e o Telegram do dono, pelo porteiro)"
+    # API_SERVER_KEY (a chave que o carteiro usa). Criada por: ./predio carteiro-preparar
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/api-marketing/api.env
     environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0     # escuta dentro da rede interna; não há "ports:", então o servidor não é alcançável de fora
+      API_SERVER_PORT: "8642"
       HTTP_PROXY: http://predio-porteiro:8888
       HTTPS_PROXY: http://predio-porteiro:8888
       http_proxy: http://predio-porteiro:8888
       https_proxy: http://predio-porteiro:8888
-      NO_PROXY: localhost,127.0.0.1,predio-skip
-      no_proxy: localhost,127.0.0.1,predio-skip
+      NO_PROXY: localhost,127.0.0.1,predio-skip,predio-carteiro
+      no_proxy: localhost,127.0.0.1,predio-skip,predio-carteiro
     volumes:
       - ${PREDIO_DADOS:-/opt/predio-dados}/marketing:/opt/data
       - ./skills/marketing:/opt/data/skills/marketing:ro
