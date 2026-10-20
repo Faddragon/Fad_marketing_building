@@ -7,11 +7,11 @@ services:
     container_name: predio-skip
     command: ["gateway", "run"]
     restart: unless-stopped
-    mem_limit: 3g        # igual ao contêiner atual (3 GB)
-    cpus: 1.5            # igual ao contêiner atual
-    shm_size: "1g"       # igual ao atual (o navegador do Hermes precisa)
+    mem_limit: 3g
+    cpus: 1.5
+    shm_size: "1g"
     security_opt:
-      - no-new-privileges:true   # já testado no andar-teste, mesma imagem
+      - no-new-privileges:true
     logging:
       driver: json-file
       options:
@@ -30,9 +30,11 @@ services:
       - ./skills/skip:/opt/data/skills/skip:ro
       - ./SOUL.md:/opt/data/SOUL.md:ro
       # Pasta de troca com os outros andares (única onde o skip escreve fora da memória).
+      # Inclui correio/config/: conta do Instagram e perfis de referência, editáveis pelo Telegram.
       - ${PREDIO_DADOS:-/opt/predio-dados}/correio:/opt/correio
+      # Identidade das marcas (só leitura), usada pela revisão de conformidade.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/marca:/opt/marca:ro
     networks: [predio_externa]
-    # Opcional, a testar: pids_limit: 512 (o marketing usa 256; o skip abre navegador e pode precisar de mais)
 networks:
   predio_externa:
     external: true

@@ -1,7 +1,7 @@
 ---
 name: regras-cfm
 description: Boas práticas de publicidade médica do prédio, para revisar conteúdo de Instagram e LinkedIn.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Regras de publicidade médica (CFM)
@@ -43,4 +43,4 @@ Algumas regras daqui são **mais rígidas que a norma**, por decisão do prédio
 cura, garantido, definitivo, milagre, revolucionário, sem riscos, sem dor, o melhor, único, exclusivo, imperdível, urgente, promoção, antes e depois, emagreça X kg.
 
 ## Rodapé obrigatório
-Na legenda do Instagram e no fim do LinkedIn, uma linha com nome do médico, CRM e RQE (a linha certa está em `/opt/predio/marca/identidade.md`). A falta do rodapé **bloqueia** (CFM-13).
+Na legenda do Instagram e no fim do LinkedIn, uma linha com nome do médico, CRM e RQE. A linha certa é o campo `rodape_obrigatorio` de `/opt/marca/<marca_id>/perfil.json`. A falta do rodapé **bloqueia** (CFM-13).

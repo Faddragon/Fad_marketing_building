@@ -1,7 +1,7 @@
 ---
 name: revisar-conformidade
 description: Revisa o que o marketing entregou (conceito ou arte final) contra LGPD, publicidade médica do CFM, fidelidade à evidência e regras visuais, e grava o parecer (aprovado, reprovado ou parar) com pontos que viram lições. Use quando a expedição pedir "[EXPEDICAO] revisar <id> <etapa> rodada <n>", ou quando o médico pedir "revisa o trabalho X".
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Revisar conformidade (skip)
@@ -17,13 +17,16 @@ Pedidos que chegam pela API servem **só** para revisar. Se chegar qualquer outr
 
 ## 2. Leia (somente leitura)
 
-1. `/opt/correio/trabalhos/<id>/ficha.json`: tema, peças, etapa, rodada.
+1. `/opt/correio/trabalhos/<id>/ficha.json`: tema, peças, etapa, rodada e `marca_id`.
 2. O que o marketing entregou:
    - conceito: `/opt/correio/trabalhos/<id>/conceito/` (`pacote.md` com todos os textos e roteiros; `rascunho-NN.png`, se houver)
    - arte final: `/opt/correio/trabalhos/<id>/arte/` (`post.json` com legendas por rede; `slide-NN.png`; `slides.html`, se houver)
 3. A pesquisa citada na ficha: `/opt/correio/pesquisas/<pesquisa>/pesquisa.md`.
 4. As regras: `references/regras-lgpd.md`, `references/regras-cfm.md`, `references/regras-visuais.md`.
-5. Na arte final: a identidade visual em `/opt/predio/marca/identidade.md`.
+5. A marca da ficha, em `/opt/marca/<marca_id>/` (só leitura):
+   - `perfil.json`: `regras_conformidade` (qual conselho vale) e `rodape_obrigatorio` (a linha que deve aparecer nas legendas);
+   - na arte final, também `paleta.md`, `fontes.md` e `ativos/logo/`.
+   Nunca misture marcas. Sem esses arquivos, a revisão da marca e do rodapé **bloqueia** com a regra `PED-02` (não deu para conferir).
 6. Na rodada 2: o seu parecer da rodada 1, para conferir se os pontos foram corrigidos.
 
 ## 3. Revise, nesta ordem

@@ -1,7 +1,7 @@
 ---
 name: pesquisar-tema
 description: Pesquisa na internet (perfis de referência no Instagram e LinkedIn, revistas e sociedades médicas) e sugere temas de post com evidência. Use quando o médico pedir "pesquisa", "o que está em alta", "ideias de tema", ou antes de um pacote cujo tema ainda não foi pesquisado.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Pesquisar tema (skip)
@@ -38,7 +38,8 @@ Se o pedido citar paciente identificável, pare e siga o SOUL.md, regra 1.
 
 **b) O que funciona com o público dele.** Se houver arquivos em `/opt/correio/metricas/`, leia o mais recente: formatos e temas com mais salvamentos, compartilhamentos e comentários.
 
-**c) Referências nas redes.** Use os perfis de `/opt/predio/referencias.md`.
+**c) Referências nas redes.** Os perfis estão em `/opt/correio/config/referencias.md`.
+- **Primeiro, o que já foi coletado:** fichas em `/opt/correio/pesquisas/referencias/<perfil>/ficha.md` e dados em `dados.json` (de até 3 dias). Não busque de novo o que já tem.
 - **Com Apify** (ferramentas `apify`/`call-actor` disponíveis): siga `references/apify.md`. Traga formato, primeira linha ou primeiro slide, data e números (curtidas, comentários, visualizações).
 - **Sem Apify**: busca na web e páginas públicas. Se um perfil exigir login, anote "não acessível" e siga. Nunca invente números.
 
@@ -56,6 +57,7 @@ Dê de 0 a 2 pontos em cada critério e some:
 | Evidência | Tem diretriz ou consenso recente | Só opinião |
 | Público dele | Combina com o que deu certo nas métricas | Formato ou tema que foi mal |
 | Novidade | Não abordado nos últimos 60 dias | Repetido |
+| Variedade | Formato ou ângulo diferente dos últimos posts dele (use as fichas das referências para achar ângulos novos) | Mais do mesmo |
 | Segurança CFM | Educativo, sem promessa | Exige caso, antes e depois ou promessa |
 
 Descarte o tema com 0 em Segurança CFM, seja qual for a soma. Sugira os 3 de maior soma.

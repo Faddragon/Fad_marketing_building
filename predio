@@ -9,7 +9,7 @@ ANDARES=(porteiro skip marketing)                          # ordem de subida: o 
 UID_HERMES=10000                                           # dono da pasta de dados dentro da imagem do Hermes
 REDE_INTERNA=predio_interna                                # sem saída para a internet
 REDE_EXTERNA=predio_externa                                # com saída para a internet
-PASTAS_CORREIO=(trabalhos pedidos pesquisas rascunhos prontos decisoes aprovados enviados rejeitados metricas avisos)
+PASTAS_CORREIO=(trabalhos pedidos pesquisas rascunhos prontos decisoes aprovados enviados rejeitados metricas avisos revisoes propostas config)
 ALVOS=()
 
 erro() { echo "ERRO: $*" >&2; exit 1; }
@@ -119,7 +119,7 @@ cmd_ajuda() {
   cat <<'TXT'
 predio - painel de controle do Prédio Hermes FAD
 
-  ./predio instalar              cria as redes e as pastas de dados (uma vez)
+  ./predio instalar              cria as redes e as pastas de dados (pode repetir sem medo)
   ./predio atualizar             baixa do GitHub as skills, SOULs e composes novos
   ./predio subir [andar|tudo]    liga (e constrói, se preciso)
   ./predio parar [andar|tudo]    desliga (os dados ficam)
@@ -136,7 +136,7 @@ TXT
 cmd="${1:-ajuda}"; shift || true
 case "$cmd" in
   instalar)    cmd_instalar ;;
-  atualizar)   git -C "$RAIZ" pull --ff-only; echo "Agora rode: ./predio reconstruir <andar>" ;;
+  atualizar)   git -C "$RAIZ" pull --ff-only; chmod +x "$RAIZ/predio"; "$RAIZ/predio" instalar >/dev/null; echo "Agora rode: ./predio reconstruir <andar>" ;;
   subir)       definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> subindo $a"; compose "$a" up -d --build; done ;;
   parar)       definir_alvos "${1:-}"; for ((i=${#ALVOS[@]}-1; i>=0; i--)); do echo ">> parando ${ALVOS[$i]}"; compose "${ALVOS[$i]}" stop; done ;;
   reconstruir) definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> reconstruindo $a"; compose "$a" up -d --build --force-recreate; done ;;
