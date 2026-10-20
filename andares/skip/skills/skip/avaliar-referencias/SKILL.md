@@ -1,7 +1,7 @@
 ---
 name: avaliar-referencias
 description: Avalia os perfis de referência do Instagram em rodízio (por padrão 3 por dia) para aumentar a diversidade de criatividade do conteúdo. Use quando a tarefa agendada disparar, quando o dono pedir "avalia as referências", "liga/pausa a avaliação diária" ou "o que aprendemos com os perfis".
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Avaliar referências (skip)
@@ -21,18 +21,21 @@ Quantos por dia: `perfis_por_dia` em `/opt/correio/config/instagram.md` (padrão
 
 ## 1. Escolha os perfis do dia
 
-1. Leia a seção Instagram de `referencias.md` (ignore "Removidos").
-2. Para cada perfil, veja a data em `/opt/correio/pesquisas/referencias/<perfil>/ficha.md`. Sem ficha = nunca avaliado = primeiro da fila.
-3. Pegue os N mais antigos (N = `perfis_por_dia`). Nunca mais que N por dia, mesmo que o dono peça "avalia todos": nesse caso avise que o limite protege a conta e distribua nos próximos dias.
+1. Leia `/opt/correio/avisos/coletor.md` (estado do coletor): se houver aviso de token vencido ou erro, conte ao dono em uma linha e siga com o que houver.
+2. Leia a seção Instagram de `/opt/correio/config/referencias.md` (ignore "Removidos").
+3. Para cada perfil, compare `/opt/correio/pesquisas/referencias/<perfil>/dados.json` (coleta do dia) com `ficha.md` na mesma pasta. O nome da pasta é o @ em minúsculas e sem o `@`.
+4. **Avalie primeiro** os perfis com `dados.json` mais novo que a ficha (ou sem ficha). Até N por dia (N = `perfis_por_dia` em `/opt/correio/config/instagram.md`). Nunca mais que N, mesmo que o dono peça "avalia todos": avise que o limite protege a conta e distribua nos próximos dias.
+5. Perfil sem `dados.json` recente: não avalie nesta rodada; o coletor chega nele nos próximos dias. Se for urgente, use a seção 2.
 
-## 2. Colete os dados de cada perfil (nesta ordem; use a primeira que funcionar)
+## 2. Colete os dados de cada perfil
 
-1. **Arquivos do coletor** (script sem IA do prédio): `/opt/correio/pesquisas/referencias/<perfil>/dados.json`, de até 3 dias. É a fonte preferida: oficial, sem login e com volume baixo.
-2. **Apify**, se estiver conectada: uma chamada por perfil (`pesquisar-tema/references/apify.md`).
-3. **Páginas públicas na web**, sem login. Perfil que exigir login = "não acessível".
-4. **O dono**: se nada funcionou, junte os perfis sem dado em **uma só** mensagem e peça prints ou links dos posts recentes (ou use `estudar-post`).
+O **coletor** (script sem IA, todo dia às 06:00) já deixa o `dados.json` pronto: legenda, tipo, link, data, curtidas e comentários dos posts mais recentes, mais seguidores. Use esse arquivo. Só se faltar, tente, nesta ordem:
 
-Use o que vier. Se a fonte só trouxer números (sem legenda nem formato), avalie só o que dá e escreva "sem dado" no resto. Nunca invente.
+1. **Apify**, se estiver conectada: uma chamada por perfil (`pesquisar-tema/references/apify.md`).
+2. **Páginas públicas na web**, sem login. Perfil que exigir login = "não acessível".
+3. **O dono**: junte os perfis sem dado em **uma só** mensagem e peça prints ou links dos posts recentes (ou use `estudar-post`).
+
+Use o que vier. O coletor **não** traz salvamentos, compartilhamentos, alcance nem o visual dos posts: escreva "sem dado" nesses itens da ficha. Nunca invente. Perfil pessoal ou privado dá erro no coletor: avise o dono e sugira trocá-lo por um perfil profissional.
 
 ## 3. Ficha do perfil
 

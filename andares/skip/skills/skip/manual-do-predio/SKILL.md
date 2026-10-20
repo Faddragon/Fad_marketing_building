@@ -1,7 +1,7 @@
 ---
 name: manual-do-predio
 description: Manual do skip sobre o Prédio Hermes FAD - andares, caminho de um trabalho com as duas aprovações, pastas, códigos, modos, comandos da VPS e diagnóstico de erros. Use quando o Dr. Francisco perguntar como o prédio funciona, por que algo não saiu, qual comando rodar ou como resolver um erro.
-version: 3.1.0
+version: 3.2.0
 ---
 
 # Manual do skip (andar 1)
@@ -20,12 +20,12 @@ Contêineres Docker numa VPS Hostinger, um andar por função. Um pedido no Tele
 | 1 | **expedição** (script, sem IA, ainda não existe) | Sim | Manda as prévias com código pelo seu bot, pede revisões a você pela API, agenda no Postiz por rede e busca métricas |
 | 2 | **marketing** (Hermes) | **Não** | Cria o conceito e a arte final, segue as lições e a marca |
 | — | **carteiro** (script, sem IA, ainda não existe) | **Não** | Leva o trabalho entre as etapas, barra dado de paciente e escreve o livro de lições |
-| — | **coletor do Instagram** (script, sem IA, ainda não existe) | Sim | Guarda o token da Meta, consulta os perfis e grava os dados em `pesquisas/referencias/` e `metricas/` |
+| — | **coletor do Instagram** (script, sem IA) | Sim | Todo dia às 06:00 consulta 3 perfis da lista pela API oficial da Meta e grava `pesquisas/referencias/<perfil>/dados.json`. Estado em `avisos/coletor.md`. Métricas da conta do dono ainda não |
 | — | **porteiro** | Só openrouter.ai e Telegram | Deixa o marketing chamar o modelo de IA e o Telegram do dono, e só isso |
 | Fora | **Postiz** | — | Publica no horário agendado |
 | Fora | **backup local** | — | No computador do médico: cópia diária e relatório |
 
-Enquanto carteiro, expedição e coletor não existem, o fluxo automático completo ainda não roda. Não afirme que um trabalho andou sozinho.
+Enquanto carteiro e expedição não existem, o fluxo automático completo ainda não roda. Não afirme que um trabalho andou sozinho.
 
 ## 3. Suas skills
 
@@ -63,7 +63,8 @@ Você **não vê** as mensagens da expedição (prévias, códigos e confirmaç�
 
 | Pasta | Você |
 | --- | --- |
-| `/opt/correio/pesquisas/` (inclui `referencias/<perfil>/`) | grava |
+| `/opt/correio/pesquisas/` (inclui `referencias/<perfil>/`: o coletor grava `dados.json`, você grava `ficha.md`) | grava |
+| `/opt/correio/avisos/coletor.md` | só lê |
 | `/opt/correio/pedidos/` | grava |
 | `/opt/correio/decisoes/` | grava |
 | `/opt/correio/revisoes/` | grava |
@@ -109,7 +110,8 @@ Mudanças em SOUL.md, skills, marca e lista do porteiro são feitas **no GitHub*
 | Marketing não responde no Telegram | `./predio logs marketing` e `./predio logs porteiro` (o porteiro precisa liberar `api.telegram.org`) |
 | Skill nova não aparece | Peça ao médico `./predio reconstruir skip` e depois `/reload-skills` no Telegram |
 | Apify falhou | Token ou créditos: conferir o token em `segredos/` e o saldo em apify.com |
-| Perfil de referência "não acessível" | Perfil pessoal, privado ou sem dado do coletor: peça prints ao dono |
+| Perfil de referência "não acessível" | Perfil pessoal, privado ou ainda não coletado: veja `avisos/coletor.md` e, se preciso, peça prints ao dono |
+| Coletor com erro ou token vencido | `avisos/coletor.md` diz o motivo; o dono roda `./predio logs coletor` e gera um token novo (README do coletor) |
 | "Pedido barrado" | Reescrever sem nome, idade com diagnóstico, telefone, e-mail ou CPF |
 | `Permission denied` em `/opt/data` | `chown -R 10000:10000 /opt/predio-dados/<andar>` e `./predio reconstruir <andar>` |
 | Texto ou arte fracos | Promover lições; melhorar as skills e a marca do marketing |

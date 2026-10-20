@@ -1,0 +1,42 @@
+# Andar COLETOR - script sem IA que lê o Instagram pela API oficial da Meta.
+# Guarda o token (o agente nunca o vê) e grava os dados em correio/pesquisas/referencias/.
+# Subir:  ./predio subir coletor     Ver:  ./predio logs coletor
+services:
+  coletor:
+    build: .
+    image: predio-coletor
+    container_name: predio-coletor
+    restart: unless-stopped
+    user: "10000:10000"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      predio.andar: "coletor"
+      predio.tipo: "script"
+      predio.funcao: "coleta diária de perfis do Instagram (API oficial da Meta), sem IA"
+      predio.internet: "sim (o código só chama graph.facebook.com)"
+    environment:
+      COLETA_HORA: ${COLETA_HORA:-06:00}
+    volumes:
+      # Só leitura: a lista de perfis e o ritmo, que o skip edita pelo Telegram.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio/config:/dados/config:ro
+      # Escrita: os dados coletados e o aviso de estado. Nada mais do correio.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio/pesquisas/referencias:/dados/referencias
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio/avisos:/dados/avisos
+      # O token e a chave do app. Só este contêiner enxerga esta pasta.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/segredos/coletor:/segredo
+    networks: [predio_externa]
+networks:
+  predio_externa:
+    external: true
