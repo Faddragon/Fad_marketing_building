@@ -5,6 +5,7 @@ Arquivo: `/opt/correio/trabalhos/<id>/ficha.json`. O carteiro cria a ficha a par
 ```json
 {
   "id": "2026-10-19-071500",
+  "marca_id": "francisco-dias",
   "tema": "Nódulo de tireoide: nem todo é câncer",
   "angulo": "tranquilizar e explicar quando investigar",
   "publico": "adultos leigos, 30 a 60 anos",
@@ -20,10 +21,13 @@ Arquivo: `/opt/correio/trabalhos/<id>/ficha.json`. O carteiro cria a ficha a par
   "proibido": ["citar marca de medicamento"],
   "origem": "medico",
   "etapa": "conceito",
-  "rodada": 1,
+  "versao": 2,
+  "rodada": 2,
+  "conceito_aprovado": null,
   "ajustes": [
-    {"etapa": "conceito", "comentario": "gancho 2 alarmista", "em": "2026-10-19T09:10:00-03:00"}
+    {"etapa": "arte", "comentario": "gancho 2 alarmista", "em": "2026-10-19T09:10:00-03:00"}
   ],
+  "status": "conceito_producao",
   "criado_em": "2026-10-19T07:15:00-03:00",
   "atualizado_em": "2026-10-19T09:10:00-03:00"
 }
@@ -33,5 +37,7 @@ Arquivo: `/opt/correio/trabalhos/<id>/ficha.json`. O carteiro cria a ficha a par
 - `pecas`: só produza estas. `slides`, `duracao_seg` e `quantidade` têm prioridade sobre o padrão da skill de cada peça.
 - `pedidos_do_medico`: obrigatório seguir.
 - `proibido`: nunca use.
-- `ajustes`: pedidos do médico feitos com código. Na rodada 2, cada um precisa aparecer em `correcoes.md`.
-- `etapa` e `rodada`: devem bater com o pedido do carteiro. Se não baterem, grave `erro.txt`.
+- `etapa` e `versao` (`rodada` é igual): devem bater com o pedido do carteiro. Se não baterem, grave `erro.txt`. A pasta de entrega é `<etapa>-v<versao>/`.
+- `conceito_aprovado`: nome da pasta do conceito aprovado (ex.: `conceito-v2`). A etapa `arte` usa o texto dela.
+- `ajustes`: pedidos do médico depois de ver a prévia. Quando houver, a `devolutiva-<etapa>-v<N>.md` mais recente os repete: cada um precisa aparecer em `mudancas.md`.
+- `marca_id`: pode ser `null` quando o pedido não trouxe marca; veja o passo 0 da skill.

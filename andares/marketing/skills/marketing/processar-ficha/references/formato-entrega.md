@@ -1,14 +1,18 @@
 # Formato da entrega
 
-Pasta: `/opt/correio/rascunhos/<id>/<etapa>-r<rodada>/`. O carteiro move a pasta para `trabalhos/<id>/conceito/` ou `trabalhos/<id>/arte/`, e o skip revisa a partir dela. Mantenha os nomes exatamente assim.
+Pasta: `/opt/correio/trabalhos/<id>/<etapa>-v<versão>/`, dentro da pasta da ficha. A versão e a etapa vêm do pedido do carteiro e de `ficha.json` (campos `etapa` e `versao`). O carteiro confere a pasta e leva ao skip para revisão. Mantenha os nomes exatamente assim.
+
+Sempre crie o arquivo vazio `pronto` por último. Sem `pronto`, o carteiro entende que o trabalho não terminou.
 
 ## Etapa `conceito`
 
 ```
-conceito-r1/
-  pacote.md          obrigatório
+conceito-v1/
+  pacote.md          obrigatório (texto de todas as peças pedidas)
+  previa.md          obrigatório (resumo de até 3.500 caracteres, ver a skill)
+  otimizacao.md      o que a autorrevisão corrigiu
   rascunho-01.png    opcional: esboço simples do 1º slide (e de outros, se ajudar)
-  correcoes.md       só na rodada 2
+  mudancas.md        só da v2 em diante
   pronto             vazio, gravado por último
 ```
 
@@ -59,16 +63,18 @@ Cada número no texto leva a marca da fonte, `[1]`, **só no pacote**. Na peça 
 ## Etapa `arte`
 
 ```
-arte-r1/
-  post.json
+arte-v1/
+  post.json                        obrigatório: a expedição usa para agendar
   slide-01.png ... slide-08.png    carrossel, 1080x1440
   slides.html                      fonte dos slides (o skip confere as fontes aqui)
   linkedin-capa.png                se houver post-linkedin
-  correcoes.md                     só na rodada 2
+  previa.md                        lista dos arquivos e o que mudou
+  otimizacao.md
+  mudancas.md                      só da v2 em diante
   pronto
 ```
 
-`post.json` (a expedição usa para agendar):
+`post.json` (só inclua as redes e as peças pedidas; o texto é o do conceito aprovado):
 
 ```json
 {
@@ -88,4 +94,4 @@ arte-r1/
 }
 ```
 
-Só inclua as redes e as peças pedidas na ficha.
+Regras do `post.json`: `instagram.tipo` é `imagem` ou `carrossel` (de 1 a 10 imagens, PNG ou JPEG, só o nome do arquivo, sem pasta); legenda de até 2.200 caracteres e até 5 hashtags; `linkedin.texto` não pode ficar vazio. O carteiro acrescenta `marca_id` e `pesquisa` na entrega.
