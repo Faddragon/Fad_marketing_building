@@ -5,7 +5,7 @@ set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PREDIO_DADOS="${PREDIO_DADOS:-/opt/predio-dados}"   # tudo que muda e é privado
-ANDARES=(porteiro skip marketing)                          # ordem de subida: o porteiro primeiro
+ANDARES=(porteiro skip marketing coletor)                          # ordem de subida: o porteiro primeiro
 UID_HERMES=10000                                           # dono da pasta de dados dentro da imagem do Hermes
 REDE_INTERNA=predio_interna                                # sem saída para a internet
 REDE_EXTERNA=predio_externa                                # com saída para a internet
@@ -44,13 +44,15 @@ cmd_instalar() {
     docker network create "$REDE_EXTERNA" >/dev/null
     echo "rede criada: $REDE_EXTERNA (com internet)"
   fi
-  mkdir -p "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos"
+  mkdir -p "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/segredos/coletor"
   local p
   for p in "${PASTAS_CORREIO[@]}"; do mkdir -p "$PREDIO_DADOS/correio/$p"; done
+  mkdir -p "$PREDIO_DADOS/correio/pesquisas/referencias"
   chmod 700 "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
   # Os Hermes rodam como o usuário $UID_HERMES dentro do contêiner: ele precisa ser dono do que escreve.
   chown "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
-  chown -R "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/correio" "$PREDIO_DADOS/marca"
+  chown -R "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/correio" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos/coletor"
+  chmod 700 "$PREDIO_DADOS/segredos/coletor"
   echo "pastas de dados prontas em $PREDIO_DADOS"
   echo "próximo passo: docs/MIGRACAO.md (trazer a memória dos Hermes atuais)"
 }
@@ -129,7 +131,7 @@ predio - painel de controle do Prédio Hermes FAD
   ./predio conversar <andar>     abre o chat do Hermes do andar
   ./predio auditar               mostra montagens, redes, usuário e confere as regras
 
-Andares: porteiro, skip, marketing
+Andares: porteiro, skip, marketing, coletor
 TXT
 }
 
