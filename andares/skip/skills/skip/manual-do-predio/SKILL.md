@@ -1,7 +1,7 @@
 ---
 name: manual-do-predio
 description: Manual do skip sobre o Prédio Hermes FAD - andares, caminho de um trabalho com as duas aprovações, pastas, códigos, modos, comandos da VPS e diagnóstico de erros. Use quando o Dr. Francisco perguntar como o prédio funciona, por que algo não saiu, qual comando rodar ou como resolver um erro.
-version: 3.2.0
+version: 3.5.0
 ---
 
 # Manual do skip (andar 1)
@@ -17,15 +17,15 @@ Contêineres Docker numa VPS Hostinger, um andar por função. Um pedido no Tele
 | Andar | Quem | Internet | Papel |
 | --- | --- | --- | --- |
 | 1 | **skip (você)** | Sim | Conversa, pesquisa, faz a ficha do pedido, revisa LGPD e CFM e registra decisões |
-| 1 | **expedição** (script, sem IA, ainda não existe) | Sim | Manda as prévias com código pelo seu bot, pede revisões a você pela API, agenda no Postiz por rede e busca métricas |
+| Publicação | **expedição** (script, sem IA) | Sim | Olha a pasta `prontos/`, manda a prévia com código de 4 dígitos pelo bot, confere a sua decisão (que você grava em `decisoes/`), agenda no Postiz por rede e avisa quando saiu. Estado em `avisos/expedicao.md`; histórico em `enviados/publicacoes.csv` |
 | 2 | **marketing** (Hermes) | **Não** | Cria o conceito e a arte final, segue as lições e a marca |
-| — | **carteiro** (script, sem IA, ainda não existe) | **Não** | Leva o trabalho entre as etapas, barra dado de paciente e escreve o livro de lições |
+| — | **carteiro** (script, sem IA) | **Não** | Acorda o marketing pela API do Hermes, leva o trabalho entre as etapas, barra dado de paciente e escreve o livro de lições |
 | — | **coletor do Instagram** (script, sem IA) | Sim | Todo dia às 06:00 consulta 3 perfis da lista pela API oficial da Meta e grava `pesquisas/referencias/<perfil>/dados.json`. Estado em `avisos/coletor.md`. Métricas da conta do dono ainda não |
 | — | **porteiro** | Só openrouter.ai e Telegram | Deixa o marketing chamar o modelo de IA e o Telegram do dono, e só isso |
-| Fora | **Postiz** | — | Publica no horário agendado |
+| Publicação | **Postiz** (versão aberta, na VPS) | Sim | Guarda os acessos do Instagram e do LinkedIn, agenda e publica. Fica em um subdomínio do site do médico |
 | Fora | **backup local** | — | No computador do médico: cópia diária e relatório |
 
-Enquanto carteiro e expedição não existem, o fluxo automático completo ainda não roda. Não afirme que um trabalho andou sozinho.
+O **carteiro** leva o pedido até `prontos/`: abre `trabalhos/<id>/`, acorda o marketing (conceito, depois arte), pede o seu parecer em cada etapa e entrega a pasta pronta à expedição. O estado de cada trabalho está em `trabalhos/<id>/ficha.json` e o resumo em `avisos/carteiro.md`. Se o resumo não existir ou estiver velho, o carteiro não está rodando: sugira `./predio status`.
 
 ## 3. Suas skills
 
@@ -34,6 +34,8 @@ Enquanto carteiro e expedição não existem, o fluxo automático completo ainda
 | `concierge` | Toda mensagem: escolhe o caminho | — |
 | `pesquisar-tema` | Pesquisa e sugestão de temas | Escrever o post |
 | `estudar-post` | Post que o dono mandou (link, prints, vídeo) | Copiar o post |
+| `radar-tecnologia` | Ler sites, revistas e LinkedIn de tecnologia em medicina e montar o radar e o índice em planilha | Aprovar ou citar produto como recomendação |
+| `guardiao-publicacao` | Revisar as pastas prontas antes da prévia, ver a fila de publicação, pausar e retomar | Publicar, agendar ou ver os códigos |
 | `avaliar-referencias` | Avaliar perfis de referência em rodízio (3 por dia) | Mudar a lista de perfis |
 | `configurar-instagram` | Mudar a conta, a lista de referências e o ritmo | Qualquer coisa fora de `correio/config/` |
 | `pedir-pacote` | Transformar o "faz" em ficha | Ajustes de trabalho em andamento (isso é `decidir`) |
@@ -47,15 +49,14 @@ Enquanto carteiro e expedição não existem, o fluxo automático completo ainda
 
 1. **Pesquisa** (`pesquisar-tema`) ou **post estudado** (`estudar-post`): você sugere temas ou ideias com fontes. Grava em `pesquisas/<id>/`.
 2. **Pedido** (`pedir-pacote`): o médico escolhe e você grava `pedidos/<id>.json`.
-3. **Conceito**: o carteiro abre `trabalhos/<id>/` e chama o marketing, que entrega textos, roteiros, ganchos e um rascunho visual.
-4. **Revisão do conceito**: a expedição chama você pela API e você grava o parecer em `revisoes/` (`revisar-conformidade`). Se reprovar, o trabalho volta ao marketing com os pontos e o carteiro anota a lição. Duas reprovações: `parado`, e o médico decide.
-5. **1ª aprovação**: a expedição manda a prévia do conceito com um código. O médico aprova, ajusta ou descarta, e você registra (`decidir`).
-6. **Arte final**: o marketing faz os slides com a identidade de `marca/`.
-7. **Revisão da arte**: igual à etapa 4, agora com as regras visuais.
-8. **2ª aprovação**: nova prévia, novo código. O médico aprova com horários por rede ("insta hoje 19h, linkedin amanhã 8h").
-9. **Agendamento**: a expedição confere o código e agenda no Postiz cada rede no seu horário (ou no horário padrão) e confirma ao médico.
-10. **Métricas**: toda semana voltam para `metricas/`, e a próxima pesquisa usa esses números.
-11. **Aprendizado**: reprovações e ajustes viram lições; uma vez por mês você propõe promover as repetidas (`status-e-licoes`).
+3. **Conceito**: o carteiro abre `trabalhos/<id>/` e acorda o marketing, que entrega textos, roteiros, ganchos e um rascunho visual em `conceito-v<N>/`.
+4. **Revisão do conceito**: você revisa (`guardiao-publicacao`, seção das etapas) e grava o parecer em `revisoes/`. Se reprovar, o carteiro devolve ao marketing com os pontos e anota a lição. Duas reprovações na mesma etapa: `parado`, e o médico decide.
+5. **Arte final**: com o conceito aprovado, o marketing faz os slides com a identidade de `marca/` em `arte-v<N>/`.
+6. **Revisão da arte**: igual à etapa 4, agora com as regras visuais.
+7. **Entrega**: o carteiro põe a pasta pronta em `prontos/<id>/`. A expedição pede a sua revisão final da pasta, e só depois manda a prévia com um código ao médico. **Há uma única aprovação do médico**, no fim.
+8. **Aprovação e agendamento**: o médico aprova com horários por rede ("insta hoje 19h, linkedin amanhã 8h"), ajusta ou descarta, e você registra (`decidir`). A expedição agenda no Postiz. Um ajuste volta ao marketing pelo carteiro, que recomeça pelo conceito.
+9. **Métricas**: toda semana voltam para `metricas/`, e a próxima pesquisa usa esses números.
+10. **Aprendizado**: reprovações e ajustes viram lições; uma vez por mês você propõe promover as repetidas (`status-e-licoes`).
 
 Você **não vê** as mensagens da expedição (prévias, códigos e confirmações). Só use código digitado pelo médico.
 
@@ -75,15 +76,15 @@ Você **não vê** as mensagens da expedição (prévias, códigos e confirmaç�
 | `/opt/correio/metricas/` | só lê |
 | `/opt/marca/<marca_id>/` | só lê |
 
-## 6. Modos da expedição (`MODO` em `segredos/skip-expedicao.env`)
+## 6. Modos da expedição (`MODO` em `segredos/expedicao/expedicao.env` (andar `publicacao`), lido a cada ciclo)
 
 | Modo | O que acontece |
 | --- | --- |
-| `teste` | Prévias e códigos funcionam; o Postiz não é usado |
+| `teste` | Prévias e códigos funcionam; nada é enviado ao Postiz |
 | `rascunho` | Cria rascunhos no Postiz, sem agendar |
-| `agendar` | Agenda no Postiz depois da 2ª aprovação |
+| `agendar` | Agenda no Postiz depois da aprovação final |
 
-Ela nunca publica na hora: o mínimo é 10 minutos à frente. (A expedição ainda será construída.)
+Ela nunca publica na hora: o mínimo é 10 minutos à frente, e o horário é conferido por ela, não por você. Se o Instagram ou o LinkedIn falharem, quem avisa é a expedição, no Telegram.
 
 ## 7. Comandos que o médico roda na VPS
 
