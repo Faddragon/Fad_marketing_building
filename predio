@@ -5,7 +5,7 @@ set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PREDIO_DADOS="${PREDIO_DADOS:-/opt/predio-dados}"   # tudo que muda e é privado
-ANDARES=(porteiro skip marketing coletor)                          # ordem de subida: o porteiro primeiro
+ANDARES=(porteiro skip marketing carteiro coletor publicacao)                          # ordem de subida: o porteiro primeiro
 UID_HERMES=10000                                           # dono da pasta de dados dentro da imagem do Hermes
 REDE_INTERNA=predio_interna                                # sem saída para a internet
 REDE_EXTERNA=predio_externa                                # com saída para a internet
@@ -23,6 +23,15 @@ validar_andar() {
 definir_alvos() {  # sem argumento ou "tudo": todos os andares; senão, só o pedido
   local alvo="${1:-tudo}"
   if [[ "$alvo" == "tudo" ]]; then ALVOS=("${ANDARES[@]}"); else validar_andar "$alvo"; ALVOS=("$alvo"); fi
+}
+
+antes_de_subir() {  # confere o que o andar precisa antes de ligar
+  if [[ ( "$1" == "marketing" || "$1" == "carteiro" ) && ! -f "$PREDIO_DADOS/segredos/api-marketing/api.env" ]]; then
+    erro "a chave da API do marketing ainda não existe. Rode: ./predio carteiro-preparar"
+  fi
+  if [[ "$1" == "publicacao" && ! -f "$PREDIO_DADOS/segredos/postiz/postiz.env" ]]; then
+    erro "o Postiz ainda não foi preparado. Rode: ./predio postiz-preparar postiz.SEUDOMINIO.com.br"
+  fi
 }
 
 compose() {  # compose <andar> <argumentos do docker compose>
@@ -44,17 +53,28 @@ cmd_instalar() {
     docker network create "$REDE_EXTERNA" >/dev/null
     echo "rede criada: $REDE_EXTERNA (com internet)"
   fi
-  mkdir -p "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/segredos/coletor"
+  mkdir -p "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/segredos/coletor" "$PREDIO_DADOS/segredos/expedicao" "$PREDIO_DADOS/segredos/postiz" "$PREDIO_DADOS/segredos/api-marketing"
   local p
   for p in "${PASTAS_CORREIO[@]}"; do mkdir -p "$PREDIO_DADOS/correio/$p"; done
   mkdir -p "$PREDIO_DADOS/correio/pesquisas/referencias"
   chmod 700 "$PREDIO_DADOS/segredos" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
   # Os Hermes rodam como o usuário $UID_HERMES dentro do contêiner: ele precisa ser dono do que escreve.
   chown "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/skip" "$PREDIO_DADOS/marketing"
-  chown -R "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/correio" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos/coletor"
-  chmod 700 "$PREDIO_DADOS/segredos/coletor"
+  chown -R "$UID_HERMES:$UID_HERMES" "$PREDIO_DADOS/correio" "$PREDIO_DADOS/marca" "$PREDIO_DADOS/segredos/coletor" "$PREDIO_DADOS/segredos/expedicao"
+  chmod 700 "$PREDIO_DADOS/segredos/coletor" "$PREDIO_DADOS/segredos/expedicao" "$PREDIO_DADOS/segredos/postiz" "$PREDIO_DADOS/segredos/api-marketing"
   echo "pastas de dados prontas em $PREDIO_DADOS"
   echo "próximo passo: docs/MIGRACAO.md (trazer a memória dos Hermes atuais)"
+}
+
+cmd_carteiro_preparar() {  # cria a chave que o carteiro usa para chamar o Hermes do marketing
+  local dir="$PREDIO_DADOS/segredos/api-marketing" arq
+  arq="$dir/api.env"
+  mkdir -p "$dir"; chmod 700 "$dir"
+  if [[ -f "$arq" ]]; then echo "A chave já existe ($arq). Nada a fazer."; return 0; fi
+  command -v openssl >/dev/null || erro "openssl não encontrado"
+  ( umask 077; printf 'API_SERVER_KEY=%s\n' "$(openssl rand -hex 24)" > "$arq" )
+  echo "Chave criada em $arq (só o root lê; ela não aparece em tela nem em conversa)."
+  echo "Próximo: ./predio reconstruir marketing   e   ./predio subir carteiro"
 }
 
 cmd_status() {
@@ -91,8 +111,8 @@ montagens:
     if [[ "$(docker inspect -f '{{.HostConfig.Privileged}}' "$c")" == "true" ]]; then
       echo "  ALERTA: contêiner privilegiado"; alertas=$((alertas+1))
     fi
-    if [[ -n "$(docker inspect -f '{{range $p, $b := .NetworkSettings.Ports}}{{if $b}}x{{end}}{{end}}' "$c")" ]]; then
-      echo "  ALERTA: porta publicada no servidor"; alertas=$((alertas+1))
+    if [[ -n "$(docker inspect -f '{{range $p, $b := .NetworkSettings.Ports}}{{range $b}}{{if ne .HostIp "127.0.0.1"}}x{{end}}{{end}}{{end}}' "$c")" ]]; then
+      echo "  ALERTA: porta publicada para fora do servidor (só 127.0.0.1 é aceito)"; alertas=$((alertas+1))
     fi
     internet="$(docker inspect -f '{{index .Config.Labels "predio.internet"}}' "$c")"
     if [[ "$internet" == nao* ]]; then
@@ -130,8 +150,12 @@ predio - painel de controle do Prédio Hermes FAD
   ./predio logs <andar>          acompanha o que o andar está fazendo
   ./predio conversar <andar>     abre o chat do Hermes do andar
   ./predio auditar               mostra montagens, redes, usuário e confere as regras
+  ./predio carteiro-preparar     cria a chave da API do marketing (uma vez) para o carteiro funcionar
+  ./predio carteiro <comando>    fala com o carteiro: status, teste, exemplo, reabrir <id>, descartar <id>
+  ./predio postiz-preparar <dominio>   cria as senhas do Postiz (e guarda as chaves das redes)
+  ./predio postiz-fechar         fecha o cadastro do Postiz depois que você criou sua conta
 
-Andares: porteiro, skip, marketing, coletor
+Andares: porteiro, skip, marketing, carteiro, coletor, publicacao
 TXT
 }
 
@@ -139,13 +163,17 @@ cmd="${1:-ajuda}"; shift || true
 case "$cmd" in
   instalar)    cmd_instalar ;;
   atualizar)   git -C "$RAIZ" pull --ff-only; chmod +x "$RAIZ/predio"; "$RAIZ/predio" instalar >/dev/null; echo "Agora rode: ./predio reconstruir <andar>" ;;
-  subir)       definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> subindo $a"; compose "$a" up -d --build; done ;;
+  subir)       definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> subindo $a"; antes_de_subir "$a"; compose "$a" up -d --build; done ;;
   parar)       definir_alvos "${1:-}"; for ((i=${#ALVOS[@]}-1; i>=0; i--)); do echo ">> parando ${ALVOS[$i]}"; compose "${ALVOS[$i]}" stop; done ;;
-  reconstruir) definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> reconstruindo $a"; compose "$a" up -d --build --force-recreate; done ;;
+  reconstruir) definir_alvos "${1:-}"; for a in "${ALVOS[@]}"; do echo ">> reconstruindo $a"; antes_de_subir "$a"; compose "$a" up -d --build --force-recreate; done ;;
   status)      cmd_status ;;
   logs)        [[ -n "${1:-}" ]] || erro "use: ./predio logs <andar>"; validar_andar "$1"; compose "$1" logs -f --tail 100 ;;
   conversar)   cmd_conversar "${1:-}" ;;
   auditar)     cmd_auditar ;;
+  carteiro-preparar) cmd_carteiro_preparar ;;
+  carteiro)    docker exec -it predio-carteiro python /app/carteiro.py "$@" ;;
+  postiz-preparar) bash "$RAIZ/andares/publicacao/postiz/preparar.sh" "$@" ;;
+  postiz-fechar)   bash "$RAIZ/andares/publicacao/postiz/preparar.sh" --fechar-cadastro ;;
   ajuda|-h|--help) cmd_ajuda ;;
   *)           erro "comando desconhecido: $cmd (veja ./predio ajuda)" ;;
 esac
