@@ -1,0 +1,39 @@
+# Andar CARTEIRO - script sem IA que leva o trabalho de uma etapa a outra.
+# SEM internet (só a rede interna). Acorda o marketing pela API do próprio Hermes e entrega a pasta pronta à expedição.
+# A chave da API fica em segredos/api-marketing/ (só o carteiro e o marketing a recebem; o skip nunca).
+# Subir:  ./predio subir carteiro     Ver:  ./predio logs carteiro
+services:
+  carteiro:
+    build: .
+    image: predio-carteiro
+    container_name: predio-carteiro
+    restart: unless-stopped
+    user: "10000:10000"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      predio.andar: "carteiro"
+      predio.tipo: "script"
+      predio.funcao: "leva o trabalho entre as etapas (pedido, conceito, arte, entrega), sem IA"
+      predio.internet: "nao (só fala com o marketing na rede interna)"
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/api-marketing/api.env
+    environment:
+      MARKETING_URL: http://predio-marketing:8642
+    volumes:
+      # A caixa de correio: lê pedidos, pesquisas e pareceres; escreve trabalhos, prontos, avisos e licoes.md
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio:/correio
+    networks: [predio_interna]
+networks:
+  predio_interna:
+    external: true
