@@ -1,0 +1,242 @@
+# Andar PUBLICAÇÃO - a saída do prédio para as redes sociais.
+# Tem dois moradores: a EXPEDIÇÃO (script sem IA, leva ao Postiz o que o médico aprovou)
+# e o POSTIZ (agendador open-source, que publica no horário). O Postiz precisa de banco, fila e do Temporal,
+# por isso este andar sobe 6 contêineres de apoio. Nenhum deles tem porta aberta para a internet.
+#
+# Antes de subir: ./predio postiz-preparar postiz.SEUDOMINIO.com.br   (cria as senhas em segredos/postiz/)
+# Subir:  ./predio subir publicacao     Ver:  ./predio status | ./predio logs publicacao
+# Passo a passo completo: andares/publicacao/README.md
+#
+# Redes deste andar:
+#   postiz_interna    interna (sem internet): Postiz, banco, fila e expedição conversam aqui
+#   temporal_interna  interna (sem internet): Postiz e o Temporal (agenda dos posts)
+#   predio_externa    com internet: só o Postiz (APIs da Meta e do LinkedIn) e a expedição (Telegram)
+services:
+
+  # ---------------------------------------------------------------- Postiz
+  postiz:
+    image: ghcr.io/gitroomhq/postiz-app:latest   # para travar numa versão, troque "latest" pela tag que funcionou
+    container_name: predio-postiz
+    restart: unless-stopped
+    mem_limit: 1536m
+    cpus: 1.5
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "postiz"
+      predio.funcao: "agenda e publica nas redes (Instagram, LinkedIn)"
+      predio.internet: "sim (chama as APIs da Meta e do LinkedIn)"
+    # Segredos e endereço público (criados por ./predio postiz-preparar). Nunca vão para o GitHub.
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/postiz/postiz.env
+    environment:
+      REDIS_URL: "redis://postiz-redis:6379"
+      BACKEND_INTERNAL_URL: "http://localhost:3000"
+      TEMPORAL_ADDRESS: "temporal:7233"
+      IS_GENERAL: "true"
+      RUN_CRON: "true"
+      STORAGE_PROVIDER: "local"
+      UPLOAD_DIRECTORY: "/uploads"
+      NEXT_PUBLIC_UPLOAD_DIRECTORY: "/uploads"
+      API_LIMIT: "30"
+      NX_ADD_PLUGINS: "false"
+    volumes:
+      - postiz-config:/config/
+      - postiz-uploads:/uploads/
+    ports:
+      # Só a própria VPS enxerga. Quem leva ao público é o Cloudflare (túnel ou proxy), veja o README.
+      - "127.0.0.1:4007:5000"
+    networks: [postiz_interna, temporal_interna, predio_externa]
+    healthcheck:
+      test: ["CMD", "node", "-e", "const r=require('http').get('http://localhost:5000/',res=>process.exit(res.statusCode<500?0:1));r.on('error',()=>process.exit(1));r.setTimeout(4000,()=>{r.destroy();process.exit(1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    depends_on:
+      postiz-postgres:
+        condition: service_healthy
+      postiz-redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+
+  postiz-postgres:
+    image: postgres:17-alpine
+    container_name: predio-postiz-postgres
+    restart: unless-stopped
+    mem_limit: 256m
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "banco"
+      predio.funcao: "banco de dados do Postiz"
+      predio.internet: "nao (rede interna)"
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/postiz/postgres.env
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    networks: [postiz_interna]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  postiz-redis:
+    image: redis:7.2
+    container_name: predio-postiz-redis
+    restart: unless-stopped
+    mem_limit: 128m
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "fila"
+      predio.funcao: "fila e cache do Postiz"
+      predio.internet: "nao (rede interna)"
+    volumes:
+      - postiz-redis-data:/data
+    networks: [postiz_interna]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---------------------------------------------------------------- Temporal (a agenda dos posts)
+  temporal-elasticsearch:
+    image: elasticsearch:7.17.27
+    container_name: predio-temporal-elasticsearch
+    restart: unless-stopped
+    mem_limit: 768m
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "apoio"
+      predio.funcao: "índice de busca do Temporal"
+      predio.internet: "nao (rede interna)"
+    environment:
+      - cluster.routing.allocation.disk.threshold_enabled=true
+      - cluster.routing.allocation.disk.watermark.low=512mb
+      - cluster.routing.allocation.disk.watermark.high=256mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - xpack.security.enabled=false
+    networks: [temporal_interna]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS \"http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s\" || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    volumes:
+      - temporal-elasticsearch-data:/usr/share/elasticsearch/data
+
+  temporal-postgresql:
+    image: postgres:16
+    container_name: predio-temporal-postgresql
+    restart: unless-stopped
+    mem_limit: 256m
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "banco"
+      predio.funcao: "banco de dados do Temporal"
+      predio.internet: "nao (rede interna)"
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/postiz/temporal-db.env
+    networks: [temporal_interna]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - temporal-postgres-data:/var/lib/postgresql/data
+
+  temporal:
+    image: temporalio/auto-setup:1.28.1
+    container_name: predio-temporal
+    restart: unless-stopped
+    mem_limit: 512m
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "apoio"
+      predio.funcao: "agenda dos posts do Postiz (Temporal)"
+      predio.internet: "nao (rede interna)"
+    env_file: ${PREDIO_DADOS:-/opt/predio-dados}/segredos/postiz/temporal-db.env
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_SEEDS=temporal-postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      - ENABLE_ES=true
+      - ES_SEEDS=temporal-elasticsearch
+      - ES_VERSION=v7
+      - TEMPORAL_NAMESPACE=default
+    volumes:
+      - ./postiz/dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+    networks: [temporal_interna]
+    depends_on:
+      temporal-postgresql:
+        condition: service_healthy
+      temporal-elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------- Expedição
+  expedicao:
+    build: ./expedicao
+    image: predio-expedicao
+    container_name: predio-expedicao
+    restart: unless-stopped
+    user: "10000:10000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.25
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      predio.andar: "publicacao"
+      predio.tipo: "script"
+      predio.funcao: "leva ao Postiz o que o médico aprovou: prévia com código, agendamento, confirmação (sem IA)"
+      predio.internet: "sim (só o Telegram; o Postiz fica na rede interna)"
+    volumes:
+      # A caixa de correio: lê prontos/, revisoes/ e decisoes/; escreve avisos/, enviados/ e rejeitados/.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/correio:/correio
+      # expedicao.env (chave do Postiz, token do Telegram, MODO) e o estado dos códigos. O skip nunca enxerga esta pasta.
+      - ${PREDIO_DADOS:-/opt/predio-dados}/segredos/expedicao:/segredo
+    networks: [postiz_interna, predio_externa]
+
+volumes:
+  postiz-config:
+  postiz-uploads:
+  postgres-volume:
+  postiz-redis-data:
+  temporal-postgres-data:
+  temporal-elasticsearch-data:
+
+networks:
+  postiz_interna:
+    internal: true
+  temporal_interna:
+    internal: true
+  predio_externa:
+    external: true
